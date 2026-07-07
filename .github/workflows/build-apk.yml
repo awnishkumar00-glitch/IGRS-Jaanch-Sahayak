@@ -14,7 +14,6 @@ jobs:
       - name: Extract project ZIP
         run: |
           ZIP_FILE=$(find . -maxdepth 1 -name "*.zip" | head -1)
-          echo "Using ZIP: $ZIP_FILE"
           unzip "$ZIP_FILE" -d project
 
       - name: Setup Java 17
@@ -27,37 +26,20 @@ jobs:
         uses: gradle/actions/setup-gradle@v4
         with:
           gradle-version: "8.9"
-      - name: Enable AndroidX
-            - name: Fix Java Kotlin JVM Target
-        working-directory: project
-        run: |
-          python3 - <<'PY'
-          p = "app/build.gradle.kts"
-          s = open(p).read()
-          s = s.replace(
-              'buildFeatures { viewBinding = true }',
-              '''compileOptions {
-                  sourceCompatibility = JavaVersion.VERSION_17
-                  targetCompatibility = JavaVersion.VERSION_17
-              }
-              kotlinOptions {
-                  jvmTarget = "17"
-              }
-              buildFeatures { viewBinding = true }'''
-          )
-          open(p, "w").write(s)
-          PY
+
+      - name: Fix Android settings
         working-directory: project
         run: |
           echo "android.useAndroidX=true" > gradle.properties
           echo "android.enableJetifier=true" >> gradle.properties
+          sed -i '/buildFeatures { viewBinding = true }/i\    compileOptions { sourceCompatibility = JavaVersion.VERSION_17; targetCompatibility = JavaVersion.VERSION_17 }\n    kotlinOptions { jvmTarget = "17" }' app/build.gradle.kts
+
       - name: Build APK
         working-directory: project
         run: gradle :app:assembleDebug
 
       - name: Copy APK
-        run: |
-          cp project/app/build/outputs/apk/debug/app-debug.apk IGRS_Jaanch_Sahayak.apk
+        run: cp project/app/build/outputs/apk/debug/app-debug.apk IGRS_Jaanch_Sahayak.apk
 
       - name: Upload APK
         uses: actions/upload-artifact@v4
