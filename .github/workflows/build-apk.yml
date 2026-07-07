@@ -28,6 +28,25 @@ jobs:
         with:
           gradle-version: "8.9"
       - name: Enable AndroidX
+            - name: Fix Java Kotlin JVM Target
+        working-directory: project
+        run: |
+          python3 - <<'PY'
+          p = "app/build.gradle.kts"
+          s = open(p).read()
+          s = s.replace(
+              'buildFeatures { viewBinding = true }',
+              '''compileOptions {
+                  sourceCompatibility = JavaVersion.VERSION_17
+                  targetCompatibility = JavaVersion.VERSION_17
+              }
+              kotlinOptions {
+                  jvmTarget = "17"
+              }
+              buildFeatures { viewBinding = true }'''
+          )
+          open(p, "w").write(s)
+          PY
         working-directory: project
         run: |
           echo "android.useAndroidX=true" > gradle.properties
